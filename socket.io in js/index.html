@@ -1,0 +1,57 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>Socket.IO Chat</title>
+  <style>
+    body { font-family: Arial; padding: 20px; }
+    #log { border: 1px solid #ddd; padding: 10px; height: 220px; overflow: auto; }
+    input { padding: 8px; width: 260px; }
+    button { padding: 8px 12px; }
+  </style>
+</head>
+<body>
+  <h2>Socket.IO Chat (Fastify)</h2>
+
+  <div id="log"></div><br/>
+
+  <input id="msg" placeholder="Type message..." />
+  <button id="send">Send</button>
+
+  <!-- Socket.IO client (served automatically by server) -->
+  <script src="/socket.io/socket.io.js"></script>
+
+  <script>
+    const logDiv = document.getElementById("log");
+    const msgInput = document.getElementById("msg");
+    const sendBtn = document.getElementById("send");
+
+    function log(text) {
+      logDiv.innerHTML += `<div>${text}</div>`;
+      logDiv.scrollTop = logDiv.scrollHeight;
+    }
+
+    const socket = io();
+
+    // ✅ No random ID shown
+    socket.on("connect", () => log("✅ Connected"));
+    socket.on("connect_error", (e) => log("❌ Connect error: " + e.message));
+    socket.on("disconnect", () => log("🔴 Disconnected"));
+
+    socket.on("chat", (msg) => log("💬 " + msg));
+
+    function send() {
+      const v = msgInput.value.trim();
+      if (!v) return;
+      socket.emit("chat", v);
+      msgInput.value = "";
+      msgInput.focus();
+    }
+
+    sendBtn.addEventListener("click", send);
+    msgInput.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") send();
+    });
+  </script>
+</body>
+</html>

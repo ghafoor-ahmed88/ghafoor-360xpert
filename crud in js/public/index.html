@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Fastify CRUD</title>
+  <style>
+    body { font-family: Arial, sans-serif; padding: 20px; max-width: 750px; margin: auto; }
+    h2 { margin: 10px 0; }
+    .box { border: 1px solid #ddd; padding: 15px; border-radius: 8px; margin-bottom: 15px; }
+    .row { display: flex; gap: 10px; flex-wrap: wrap; }
+    input { padding: 8px; width: 100%; border: 1px solid #ccc; border-radius: 6px; }
+    .row input { flex: 1; min-width: 180px; }
+    button { padding: 8px 12px; border: 1px solid #ccc; border-radius: 6px; cursor: pointer; }
+    button.primary { background: #f3f3f3; }
+    button.danger { background: #ffecec; border-color: #ffb3b3; }
+    .actions { display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap; }
+    ul { padding-left: 18px; }
+    li { margin: 8px 0; display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+    .user { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .mini { display: flex; gap: 6px; flex-wrap: wrap; }
+  </style>
+</head>
+<body>
+
+  <div class="box">
+    <h2 id="formTitle">Register User</h2>
+
+    <div class="row">
+      <input id="name" placeholder="Name">
+      <input id="email" placeholder="Email">
+      <input id="password" placeholder="Password" type="password">
+    </div>
+
+    <div class="actions">
+      <button class="primary" onclick="submitForm()">Save</button>
+      <button onclick="resetForm()">Cancel</button>
+    </div>
+  </div>
+
+  <div class="box">
+    <h2>Users</h2>
+    <ul id="users"></ul>
+  </div>
+
+<script>
+  let editUserId = null;
+
+  const nameInput = document.getElementById('name');
+  const emailInput = document.getElementById('email');
+  const passwordInput = document.getElementById('password');
+  const usersList = document.getElementById('users');
+  const formTitle = document.getElementById('formTitle');
+
+  async function submitForm() {
+    const name = nameInput.value.trim();
+    const email = emailInput.value.trim();
+    const password = passwordInput.value.trim();
+
+    if (!name || !email) {
+      alert("Name & Email required");
+      return;
+    }
+
+    if (editUserId === null) {
+      await fetch('/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name, email, password })
+      });
+    } else {
+      await fetch('/users/' + editUserId, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name, email, password })
+      });
+    }
+
+    resetForm();
+    loadUsers();
+  }
+
+  function editUser(id, name, email) {
+    editUserId = id;
+    nameInput.value = name;
+    emailInput.value = email;
+    passwordInput.value = '';
+    formTitle.innerText = "Update User";
+  }
+
+  function resetForm() {
+    editUserId = null;
+    nameInput.value = '';
+    emailInput.value = '';
+    passwordInput.value = '';
+    formTitle.innerText = "Register User";
+  }
+
+  async function loadUsers() {
+    const res = await fetch('/users');
+    const users = await res.json();
+
+    usersList.innerHTML = '';
+    users.forEach(u => {
+      const li = document.createElement('li');
+
+      const left = document.createElement('div');
+      left.className = 'user';
+      left.textContent = `${u.name} (${u.email})`;
+
+      const right = document.createElement('div');
+      right.className = 'mini';
+
+      const upBtn = document.createElement('button');
+      upBtn.textContent = 'Update';
+      upBtn.onclick = () => editUser(u.id, u.name, u.email);
+
+      const delBtn = document.createElement('button');
+      delBtn.textContent = 'Delete';
+      delBtn.className = 'danger';
+      delBtn.onclick = () => deleteUser(u.id);
+
+      right.appendChild(upBtn);
+      right.appendChild(delBtn);
+
+      li.appendChild(left);
+      li.appendChild(right);
+      usersList.appendChild(li);
+    });
+  }
+
+  async function deleteUser(id) {
+    await fetch('/users/' + id, { method: 'DELETE' });
+    loadUsers();
+  }
+
+  loadUsers();
+</script>
+
+</body>
+</html>
